@@ -97,8 +97,16 @@ if test "$COREURL" != ""; then
     sudo cp -f /etc/resolv.conf ${PARTSYS}/etc/
     sudo mount -o bind /proc ${PARTSYS}/proc
     sudo chroot $PARTSYS locale-gen ru_RU.UTF-8 en_US.UTF-8
+    sudo chroot $PARTSYS sed -ie 's/^\# deb /deb /' /etc/apt/sources.list
     sudo chroot $PARTSYS apt-get update
     sudo chroot $PARTSYS bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get -y install linux-signed-image-generic sudo net-tools nano iputils-ping'
+    EXTRAPACKAGES=
+    if test -f files/packages; then
+	EXTRAPACKAGES=$(cat files/packages)
+    fi
+    if test "$EXTRAPACKAGES" != ""; then
+	sudo chroot $PARTSYS bash -c "export DEBIAN_FRONTEND=noninteractive; apt-get -y install $EXTRAPACKAGES"
+    fi
     sudo chroot $PARTSYS useradd -d /home/ubuntu -m ubuntu
     sudo chroot $PARTSYS passwd -d ubuntu
     sudo chroot $PARTSYS addgroup ubuntu adm
