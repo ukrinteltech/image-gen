@@ -1,0 +1,39 @@
+#! /bin/sh
+### BEGIN INIT INFO
+# Provides:          core-tweaks
+# Required-Start:    $local_fs $remote_fs dbus
+# Required-Stop:     $local_fs $remote_fs dbus
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: run x session.
+### END INIT INFO
+
+PATH=/usr/bin:/usr/sbin:/sbin:/bin
+
+. /lib/lsb/init-functions
+
+do_start () {
+	log_action_msg "Starting xorg"
+	ischroot || start-stop-daemon -S -C -b -c ubuntu -x /usr/bin/startx
+}
+
+do_stop () {
+	log_action_msg "Stoppping xorg"
+	#start-stop-daemon -K -p $PIDFILE -c ubuntu -x /usr/bin/startx
+	killall Xorg
+}
+
+case "$1" in
+  start)
+	do_start
+	;;
+  restart|reload|force-reload)
+	;;
+  stop)
+	do_stop
+	;;
+  *)
+	echo "Usage: $0 start|stop" >&2
+	exit 3
+	;;
+esac

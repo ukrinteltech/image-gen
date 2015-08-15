@@ -1,0 +1,12 @@
+Source: core-tweaks
+Section: misc
+Priority: optional
+Maintainer: Support Team <support@madisa.technology>
+Build-Depends: cdbs, debhelper (>= 5)
+Standards-Version: 1.0
+Homepage: http://madisa.technology
+
+Package: core-tweaks
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, Xorg, firefox, pekwm
+Description: Ubuntu core tweaks for DDESK requests

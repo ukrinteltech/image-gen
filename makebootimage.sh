@@ -92,6 +92,8 @@ create_disk_image
 
 mount_disk_image
 
+make -C packages/core-tweaks package
+
 if test "$COREURL" != ""; then
     unpack_root_archive $COREURL $PARTSYS
     sudo cp -f /etc/resolv.conf ${PARTSYS}/etc/
@@ -107,10 +109,27 @@ if test "$COREURL" != ""; then
     if test "$EXTRAPACKAGES" != ""; then
 	sudo chroot $PARTSYS bash -c "export DEBIAN_FRONTEND=noninteractive; apt-get -y install $EXTRAPACKAGES"
     fi
+
     sudo chroot $PARTSYS useradd -d /home/ubuntu -m ubuntu
     sudo chroot $PARTSYS passwd -d ubuntu
     sudo chroot $PARTSYS addgroup ubuntu adm
     sudo chroot $PARTSYS addgroup ubuntu sudo
+
+    pkg=""
+    instpkgs=""
+    for pkg in packages/*.deb; do
+	echo "Custom package: $(basename $pkg)"
+	cp -f $pkg ${PARTSYS}/tmp/
+	instpkgs="$instpkgs /tmp/$(basename $pkg)"
+    done
+    ls -l ${PARTSYS}/tmp/
+    echo "Packages for installation: $instpkgs"
+    if test "$instpkgs" != ""; then
+	sudo chroot $PARTSYS dpkg -i $instpkgs
+	sudo chroot $PARTSYS rm -f $instpkgs
+	sudo chroot $PARTSYS bash -c "export DEBIAN_FRONTEND=noninteractive; apt-get -y install -f"
+    fi
+
     sudo chroot $PARTSYS bash -c 'kill -9 $(cat /run/dbus/pid)'
     sudo umount ${PARTSYS}/proc
 
@@ -164,3 +183,5 @@ if test "$TARGET" = "vmware"; then
 fi
 
 umount_disk_image
+
+rm -f packages/*.changes packages/*.deb
