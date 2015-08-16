@@ -1,5 +1,7 @@
 #!/bin/bash
 
+USEPROXY="y"
+
 TOPDIR=$PWD
 
 mkdir -p out
@@ -100,6 +102,9 @@ if test "$COREURL" != ""; then
     sudo mount -o bind /proc ${PARTSYS}/proc
     sudo chroot $PARTSYS locale-gen ru_RU.UTF-8 en_US.UTF-8
     sudo chroot $PARTSYS sed -ie 's/^\# deb /deb /' /etc/apt/sources.list
+    if test "$USEPROXY" = "y"; then
+	sudo chroot $PARTSYS bash -c 'echo "Acquire::http::Proxy \"http://127.0.0.1:3142\";" > /etc/apt/apt.conf.d/01proxy'
+    fi
     sudo chroot $PARTSYS apt-get update
     sudo chroot $PARTSYS bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get -y install linux-signed-image-generic sudo net-tools nano iputils-ping'
     EXTRAPACKAGES=
@@ -130,6 +135,11 @@ if test "$COREURL" != ""; then
 	sudo chroot $PARTSYS bash -c "export DEBIAN_FRONTEND=noninteractive; apt-get -y install -f"
     fi
 
+    if test "$USEPROXY" = "y"; then
+	sudo rm -f ${PARTSYS}/etc/apt/apt.conf.d/01proxy
+    fi
+
+    sudo chroot $PARTSYS rm -rf /var/cache/apt/*
     sudo chroot $PARTSYS bash -c 'kill -9 $(cat /run/dbus/pid)'
     sudo umount ${PARTSYS}/proc
 
