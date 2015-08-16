@@ -25,4 +25,15 @@ cat > /etc/X11/Xwrapper.config << EOF
 allowed_users=anybody
 EOF
 
+cat > /etc/pekwm/start << EOF
+#!/bin/sh
+
+firefox
+EOF
+
+chmod 755 /etc/pekwm/start
+
+tar xf /usr/share/core-tweaks/mozilla.tar.bz2 -C /home/ubuntu
+chown -R ubuntu:ubuntu /home/ubuntu
+
 exit 0
