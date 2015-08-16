@@ -94,13 +94,17 @@ create_disk_image
 
 mount_disk_image
 
-make -C packages/core-tweaks package
+make -C packages/core-tweaks  package
+make -C packages/core-updater package
 
 if test "$COREURL" != ""; then
     unpack_root_archive $COREURL $PARTSYS
     sudo cp -f /etc/resolv.conf ${PARTSYS}/etc/
     sudo mount -o bind /proc ${PARTSYS}/proc
     sudo chroot $PARTSYS locale-gen ru_RU.UTF-8 en_US.UTF-8
+
+    CONF=/tmp/linux.conf$$
+
     sudo chroot $PARTSYS sed -ie 's/^\# deb /deb /' /etc/apt/sources.list
     if test "$USEPROXY" = "y"; then
 	sudo chroot $PARTSYS bash -c 'echo "Acquire::http::Proxy \"http://127.0.0.1:3142\";" > /etc/apt/apt.conf.d/01proxy'
@@ -143,8 +147,6 @@ if test "$COREURL" != ""; then
     sudo chroot $PARTSYS bash -c 'kill -9 $(cat /run/dbus/pid)'
     sudo umount ${PARTSYS}/proc
 
-    CONF=/tmp/linux.conf$$
-
 cat > $CONF << EOF
 "Boot with standard options"        "ro root=/dev/disk/by-uuid/$(sudo blkid -o value -s UUID /dev/loop1) quiet splash intel_pstate=enable"
 "Boot to single-user mode"          "ro root=/dev/disk/by-uuid/$(sudo blkid -o value -s UUID /dev/loop1) quiet splash single"
@@ -168,10 +170,11 @@ EOF
     rm -f $CONF
 
     sudo mkdir -p ${PARTSYS}/boot/efi
+    sudo kill -9 $(sudo lsof $PARTSYS 2>/dev/null | awk '{ print $2; }' | uniq | grep '^[0-9]')
 
     ls -l $PARTSYS
-    ls -l $PARTSYS/boot
-    ls -l $PARTSYS/lib
+    ls -l ${PARTSYS}/boot
+    ls -l ${PARTSYS}/lib
 else
     umount_disk_image
     error "No system root archive!"
@@ -181,14 +184,14 @@ if test "$TARGET" = "vmware"; then
     XTMP=/tmp/efi$$
     mkdir -p $XTMP
     unzip files/refind-bin-0.9.0.zip -d $XTMP
-    sudo mkdir -p $PARTBOOT/EFI/boot
-    sudo cp -R ${XTMP}/refind-bin-0.9.0/refind/* $PARTBOOT/EFI/boot
-    sudo cp -f files/refind.conf $PARTBOOT/EFI/boot/
-    cd $PARTBOOT/EFI/boot
+    sudo mkdir -p ${PARTBOOT}/EFI/boot
+    sudo cp -R ${XTMP}/refind-bin-0.9.0/refind/* ${PARTBOOT}/EFI/boot
+    sudo cp -f files/refind.conf ${PARTBOOT}/EFI/boot/
+    cd ${PARTBOOT}/EFI/boot
     sudo mv refind_x64.efi bootx64.efi
     sudo mv refind_ia32.efi bootia32.efi
     cd $TOPDIR
-    ls -l $PARTBOOT/EFI/boot
+    ls -l ${PARTBOOT}/EFI/boot
     cp files/DDESK.vmx out/
 fi
 

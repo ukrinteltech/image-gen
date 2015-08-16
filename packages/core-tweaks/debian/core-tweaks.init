@@ -12,12 +12,6 @@ PATH=/usr/bin:/usr/sbin:/sbin:/bin
 
 . /lib/lsb/init-functions
 
-do_configure () {
-    if test ! -f /etc/core-tweaks.configured; then
-	apt-get -f install && touch /etc/core-tweaks.configured
-    fi
-}
-
 do_start () {
 	log_action_msg "Starting xorg"
 	ischroot || start-stop-daemon -S -C -b -c ubuntu -x /usr/bin/startx
@@ -31,7 +25,9 @@ do_stop () {
 
 case "$1" in
   start)
-	do_configure
+	if ischroot; then
+	    exit 0
+	fi
 	do_start
 	;;
   restart|reload|force-reload)
