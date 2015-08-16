@@ -1,0 +1,2 @@
+Required:
+sudo apt-get install cdbs debhelper
