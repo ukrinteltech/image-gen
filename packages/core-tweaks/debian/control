@@ -8,5 +8,5 @@ Homepage: http://madisa.technology
 
 Package: core-tweaks
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, Xorg, firefox, pekwm, lighttpd, php5-cgi, gnome-system-tools, cups
+Depends: ${shlibs:Depends}, ${misc:Depends}, Xorg, firefox, openbox, gnome-system-tools, cups
 Description: Ubuntu core tweaks for DDESK requests
