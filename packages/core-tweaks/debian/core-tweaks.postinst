@@ -24,6 +24,7 @@ mkdir -p /etc/xdg/openbox
 cat > /etc/xdg/openbox/autostart << EOF
 #!/bin/sh
 
+ddeskshell
 firefox file:///usr/share/core-tweaks/index.html &
 
 EOF

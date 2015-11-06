@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -i
 
 USEPROXY="y"
 
@@ -13,9 +13,40 @@ COREURL=$2
 PARTBOOT=/tmp/boot$$
 PARTSYS=/tmp/sys$$
 
+
+
+umount_disk_image() {
+  if [ -d "$PARTBOOT" ] 
+  then
+   sudo umount $PARTBOOT
+   rm -r $PARTBOOT
+  fi
+
+  if [ -d "$PARTSYS" ] 
+  then
+   sudo umount $PARTSYS
+   rm -r $PARTSYS
+  fi
+
+  if [ -n "$NLOOP0" ]
+  then
+     sudo losetup -d "$NLOOP0"
+     echo "Remove: $NLOOP0"
+  fi
+
+  if [ -n "$NLOOP1" ]
+  then
+     sudo losetup -d "$NLOOP1"
+     echo "Remove: $NLOOP1"
+  fi
+}
+
+
+
+
 error() {
     echo "ERROR: $@"
-
+    umount_disk_image
     exit 1
 }
 
@@ -34,13 +65,13 @@ esac
 IMAGENAME=out/ddesk-system-${TARGET}
 
 if test -f ${IMAGENAME}${IMAGESUFFIX}; then
-    error "disk already exists!"
+    error "image already exists!"
 fi
 
 create_disk_image() {
     case $TARGET in
     vmware)
-	vmware-vdiskmanager -c -s 2GB -a lsilogic -t 2 ${IMAGENAME}${IMAGESUFFIX}
+	vmware-vdiskmanager -c -s 3GB -a lsilogic -t 2 ${IMAGENAME}${IMAGESUFFIX}
 	echo -ne "n\n1\n2048\n+100M\nef00\nn\n\n\n\n\nw\nY\nq\n" | gdisk ${IMAGENAME}-flat${IMAGESUFFIX}
 	;;
     *)
@@ -50,28 +81,26 @@ create_disk_image() {
 }
 
 mount_disk_image() {
-    local offboot=$(gdisk -l ${IMAGENAME}-flat${IMAGESUFFIX} | grep '^\s*.1' | awk '{ print $2*512; }')
-    local sizeboot=$(($(gdisk -l ${IMAGENAME}-flat${IMAGESUFFIX} | grep '^\s*.1' | awk '{ print $3*512; }') - $offboot))
-    local offsys=$(gdisk -l ${IMAGENAME}-flat${IMAGESUFFIX} | grep '^\s*.2' | awk '{ print $2*512; }')
-    local sizesys=$(($(gdisk -l ${IMAGENAME}-flat${IMAGESUFFIX} | grep '^\s*.2' | awk '{ print $3*512; }') - $offsys))
+    local offboot=$(gdisk -l ${IMAGENAME}-flat${IMAGESUFFIX} | grep '^\s*.1' | awk '{ print $2; }')
+    offboot=$(($offboot*512))
+    local sizeboot=$(($(gdisk -l ${IMAGENAME}-flat${IMAGESUFFIX} | grep '^\s*.1' | awk '{ print $3; }')*512 - $offboot))
+    local offsys=$(gdisk -l ${IMAGENAME}-flat${IMAGESUFFIX} | grep '^\s*.2' | awk '{ print $2; }')
+    offsys=$(($offsys*512))
+    local sizesys=$(($(gdisk -l ${IMAGENAME}-flat${IMAGESUFFIX} | grep '^\s*.2' | awk '{ print $3; }')*512 - $offsys))
 
     mkdir -p $PARTBOOT
-    sudo losetup /dev/loop0 ${IMAGENAME}-flat${IMAGESUFFIX} -o $offboot --sizelimit $sizeboot || error "losetup for boot partition"
-    sudo mkfs.vfat /dev/loop0
-    sudo mount /dev/loop0 $PARTBOOT
+    NLOOP0=$(sudo losetup -f)
+    sudo losetup $NLOOP0 ${IMAGENAME}-flat${IMAGESUFFIX} -o $offboot --sizelimit $sizeboot || error "losetup for boot partition"
+    sudo mkfs.vfat $NLOOP0
+    sudo mount $NLOOP0 $PARTBOOT
 
+    NLOOP1=$(sudo losetup -f)
     mkdir -p $PARTSYS
-    sudo losetup /dev/loop1 ${IMAGENAME}-flat${IMAGESUFFIX} -o $offsys --sizelimit $sizesys || error "losetup for system partition"
-    sudo mkfs.ext4 /dev/loop1
-    sudo mount /dev/loop1 $PARTSYS
+    sudo losetup $NLOOP1 ${IMAGENAME}-flat${IMAGESUFFIX} -o $offsys --sizelimit $sizesys || error "losetup for system partition"
+    sudo mkfs.ext4 $NLOOP1
+    sudo mount $NLOOP1 $PARTSYS
 }
 
-umount_disk_image() {
-    sudo umount $PARTBOOT
-    sudo losetup -d /dev/loop0
-    sudo umount $PARTSYS
-    sudo losetup -d /dev/loop1
-}
 
 unpack_root_archive() {
     local FILE=$1
@@ -96,6 +125,7 @@ mount_disk_image
 
 make -C packages/core-tweaks  package
 make -C packages/core-updater package
+cp -f packages/ddeskshell/ddeskshell_0.1-1_amd64.deb packages/
 
 if test "$COREURL" != ""; then
     unpack_root_archive $COREURL $PARTSYS
@@ -148,15 +178,15 @@ if test "$COREURL" != ""; then
     sudo umount ${PARTSYS}/proc
 
 cat > $CONF << EOF
-"Boot with standard options"        "ro root=/dev/disk/by-uuid/$(sudo blkid -o value -s UUID /dev/loop1) quiet splash intel_pstate=enable"
-"Boot to single-user mode"          "ro root=/dev/disk/by-uuid/$(sudo blkid -o value -s UUID /dev/loop1) quiet splash single"
-"Boot with minimal options"         "ro root=/dev/disk/by-uuid/$(sudo blkid -o value -s UUID /dev/loop1)"
+"Boot with standard options"        "ro root=/dev/disk/by-uuid/$(sudo blkid -o value -s UUID $NLOOP1) quiet splash intel_pstate=enable"
+"Boot to single-user mode"          "ro root=/dev/disk/by-uuid/$(sudo blkid -o value -s UUID $NLOOP1) quiet splash single"
+"Boot with minimal options"         "ro root=/dev/disk/by-uuid/$(sudo blkid -o value -s UUID $NLOOP1)"
 EOF
     sudo cp $CONF ${PARTSYS}/boot/refind_linux.conf
 
 cat > $CONF << EOF
-UUID=$(sudo blkid -o value -s UUID /dev/loop1) /               ext4    noatime,errors=remount-ro 0       0
-UUID=$(sudo blkid -o value -s UUID /dev/loop0) /boot/efi       vfat    umask=0077      0       1
+UUID=$(sudo blkid -o value -s UUID $NLOOP1) /               ext4    noatime,errors=remount-ro 0       0
+UUID=$(sudo blkid -o value -s UUID $NLOOP0) /boot/efi       vfat    umask=0077      0       1
 tmpfs      /tmp          tmpfs      defaults,noatime,mode=1777    0    0
 EOF
     sudo cp -f $CONF ${PARTSYS}/etc/fstab
@@ -176,8 +206,7 @@ EOF
     ls -l ${PARTSYS}/boot
     ls -l ${PARTSYS}/lib
 else
-    umount_disk_image
-    error "No system root archive!"
+        error "No system root archive!"
 fi
 
 if test "$TARGET" = "vmware"; then
