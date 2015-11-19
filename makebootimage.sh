@@ -71,7 +71,7 @@ fi
 create_disk_image() {
     case $TARGET in
     vmware)
-	vmware-vdiskmanager -c -s 3GB -a lsilogic -t 2 ${IMAGENAME}${IMAGESUFFIX}
+	vmware-vdiskmanager -c -s 3.8GB -a lsilogic -t 2 ${IMAGENAME}${IMAGESUFFIX}
 	echo -ne "n\n1\n2048\n+100M\nef00\nn\n\n\n\n\nw\nY\nq\n" | gdisk ${IMAGENAME}-flat${IMAGESUFFIX}
 	;;
     *)
@@ -140,7 +140,7 @@ if test "$COREURL" != ""; then
 	sudo chroot $PARTSYS bash -c 'echo "Acquire::http::Proxy \"http://127.0.0.1:3142\";" > /etc/apt/apt.conf.d/01proxy'
     fi
     sudo chroot $PARTSYS apt-get update
-    sudo chroot $PARTSYS bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get -y install linux-signed-image-generic sudo net-tools nano iputils-ping'
+    sudo chroot $PARTSYS bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get -y install linux-signed-image-generic sudo net-tools nano iputils-ping unity-control-center'
     EXTRAPACKAGES=
     if test -f files/packages; then
 	EXTRAPACKAGES=$(cat files/packages)
@@ -168,6 +168,13 @@ if test "$COREURL" != ""; then
 	sudo chroot $PARTSYS rm -f $instpkgs
 	sudo chroot $PARTSYS bash -c "export DEBIAN_FRONTEND=noninteractive; apt-get -y install -f"
     fi
+
+	sudo chroot $PARTSYS bash -c 'update-alternatives --install /usr/bin/x-session-manager \
+                        x-session-manager /usr/bin/openbox-session 100 --slave \
+                        /usr/share/man/man1/x-session-manager.1.gz \
+                        x-session-manager.1.gz /usr/share/man/man1/openbox-session.1.gz'
+
+
 
     if test "$USEPROXY" = "y"; then
 	sudo rm -f ${PARTSYS}/etc/apt/apt.conf.d/01proxy

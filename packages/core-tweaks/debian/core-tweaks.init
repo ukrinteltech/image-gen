@@ -14,7 +14,7 @@ PATH=/usr/bin:/usr/sbin:/sbin:/bin
 
 do_start () {
 	log_action_msg "Starting xorg"
-	ischroot || start-stop-daemon -S -C -b -c ubuntu -x /usr/bin/startx
+	ischroot || start-stop-daemon -S -C -b -c ubuntu:ubuntu -x /usr/bin/startx
 }
 
 do_stop () {
