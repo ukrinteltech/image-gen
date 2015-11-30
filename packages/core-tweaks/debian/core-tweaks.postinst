@@ -24,8 +24,9 @@ mkdir -p /etc/xdg/openbox
 cat > /etc/xdg/openbox/autostart << EOF
 #!/bin/sh
 
-ddeskshell
-firefox file:///usr/share/core-tweaks/index.html &
+sudo ddeskshell
+. /etc/default/locale
+firefox http://google.com
 
 EOF
 

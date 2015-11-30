@@ -142,7 +142,7 @@ if test "$COREURL" != ""; then
 
     sudo chroot $PARTSYS sed -ie 's/^\# deb /deb /' /etc/apt/sources.list
     if test "$USEPROXY" = "y"; then
-	sudo chroot $PARTSYS bash -c 'echo "Acquire::http::Proxy \"http://192.168.122.1:3142\";" > /etc/apt/apt.conf.d/01proxy'
+	sudo chroot $PARTSYS bash -c 'echo "Acquire::http::Proxy \"http://127.0.0.1:3142\";" > /etc/apt/apt.conf.d/01proxy'
     fi
     sudo chroot $PARTSYS apt-get update
     sudo chroot $PARTSYS bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get -y install linux-signed-image-generic sudo net-tools nano iputils-ping unity-control-center'
@@ -184,7 +184,12 @@ if test "$COREURL" != ""; then
     if test "$USEPROXY" = "y"; then
 	sudo rm -f ${PARTSYS}/etc/apt/apt.conf.d/01proxy
     fi
-
+    sudo rm -f -r ${PARTSYS}/usr/share/applications
+    sudo unzip files/applications.zip -d ${PARTSYS}/usr/share
+    sudo rm -f -r ${PARTSYS}/usr/share/unity-control-center
+    sudo unzip files/unity-control-center.zip -d ${PARTSYS}/usr/share
+   
+    
     sudo chroot $PARTSYS rm -rf /var/cache/apt/*
     sudo chroot $PARTSYS bash -c 'kill -9 $(cat /run/dbus/pid)'
     sudo umount ${PARTSYS}/proc
