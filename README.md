@@ -1,6 +1,6 @@
-Required installed vmware-tools: vmware-vdiskmanager
+Ubuntu packages:
 
-Ubuntu packages: cdbs debhelper
+sudo apt-get install cdbs debhelper gdisk scons qemu-utils
 
 Build image:
 
@@ -10,5 +10,3 @@ Build image:
      a10 (yet don't work)
    COREURL
      (for example )http://cdimage.ubuntu.com/ubuntu-core/releases/15.10/release/ubuntu-core-15.10-core-amd64.tar.gz
-     
-

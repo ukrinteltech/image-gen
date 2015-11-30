@@ -69,9 +69,14 @@ if test -f ${IMAGENAME}${IMAGESUFFIX}; then
 fi
 
 create_disk_image() {
+    local util=$(which qemu-img)
     case $TARGET in
     vmware)
-	vmware-vdiskmanager -c -s 3.8GB -a lsilogic -t 2 ${IMAGENAME}${IMAGESUFFIX}
+	if test ! "$util" = ""; then
+	    qemu-img create -f vmdk -o subformat=monolithicFlat ${IMAGENAME}${IMAGESUFFIX} 3.8G
+	else
+	    vmware-vdiskmanager -c -s 3.8GB -a lsilogic -t 2 ${IMAGENAME}${IMAGESUFFIX}
+	fi
 	echo -ne "n\n1\n2048\n+100M\nef00\nn\n\n\n\n\nw\nY\nq\n" | gdisk ${IMAGENAME}-flat${IMAGESUFFIX}
 	;;
     *)
@@ -110,11 +115,11 @@ unpack_root_archive() {
     http://*|https://*|ftp://*)
 	ROOTFSTMP="/tmp/rootfs$$.dat"
 	wget "$FILE" -O "$ROOTFSTMP" || error "downloading archive!"
-	sudo tar -xf $ROOTFSTMP -C $PART
+	sudo tar -xf $ROOTFSTMP -C $PART || error "unpacking!!!"
 	rm -f "$TOOLSTMP"
 	;;
     *)
-	sudo tar -xf $FILE -C $PART
+	sudo tar -xf $FILE -C $PART || error "unpacking!!!"
 	;;
     esac
 }
@@ -137,7 +142,7 @@ if test "$COREURL" != ""; then
 
     sudo chroot $PARTSYS sed -ie 's/^\# deb /deb /' /etc/apt/sources.list
     if test "$USEPROXY" = "y"; then
-	sudo chroot $PARTSYS bash -c 'echo "Acquire::http::Proxy \"http://127.0.0.1:3142\";" > /etc/apt/apt.conf.d/01proxy'
+	sudo chroot $PARTSYS bash -c 'echo "Acquire::http::Proxy \"http://192.168.122.1:3142\";" > /etc/apt/apt.conf.d/01proxy'
     fi
     sudo chroot $PARTSYS apt-get update
     sudo chroot $PARTSYS bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get -y install linux-signed-image-generic sudo net-tools nano iputils-ping unity-control-center'
