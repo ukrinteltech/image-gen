@@ -188,7 +188,8 @@ if test "$COREURL" != ""; then
     sudo unzip files/applications.zip -d ${PARTSYS}/usr/share
     sudo rm -f -r ${PARTSYS}/usr/share/unity-control-center
     sudo unzip files/unity-control-center.zip -d ${PARTSYS}/usr/share
-   
+    mkdir -p ${PARTSYS}/home/ubuntu/.config/openbox/
+    sudo cp -f files/rc.xml ${PARTSYS}/home/ubuntu/.config/openbox/
     
     sudo chroot $PARTSYS rm -rf /var/cache/apt/*
     sudo chroot $PARTSYS bash -c 'kill -9 $(cat /run/dbus/pid)'
