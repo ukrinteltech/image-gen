@@ -26,7 +26,7 @@ cat > /etc/xdg/openbox/autostart << EOF
 
 sudo ddeskshell
 . /etc/default/locale
-firefox http://google.com
+firefox https://shell.buildserver.io/guacamole
 
 EOF
 
