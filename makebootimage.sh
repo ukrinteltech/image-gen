@@ -142,7 +142,7 @@ if test "$COREURL" != ""; then
 
     sudo chroot $PARTSYS sed -ie 's/^\# deb /deb /' /etc/apt/sources.list
     if test "$USEPROXY" = "y"; then
-	sudo chroot $PARTSYS bash -c 'echo "Acquire::http::Proxy \"http://127.0.0.1:3142\";" > /etc/apt/apt.conf.d/01proxy'
+	sudo chroot $PARTSYS bash -c "echo \"Acquire::http::Proxy \\\"${APT_PROXY-http://127.0.0.1:3142}\\\";\" > /etc/apt/apt.conf.d/01proxy"
     fi
     sudo chroot $PARTSYS apt-get update
     sudo chroot $PARTSYS bash -c 'export DEBIAN_FRONTEND=noninteractive; apt-get -y install linux-signed-image-generic sudo net-tools nano iputils-ping unity-control-center'
